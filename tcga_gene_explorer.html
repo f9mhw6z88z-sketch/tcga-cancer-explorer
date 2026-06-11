@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCGA Cancer Gene Explorer</title>
+<style>
+  :root {
+    --bg:        #0a0e1a;
+    --surface:   #111827;
+    --card:      #1a2235;
+    --border:    #1e3a5f;
+    --accent:    #2d9cdb;
+    --accent2:   #56ccf2;
+    --gold:      #f2c94c;
+    --green:     #27ae60;
+    --red:       #eb5757;
+    --text:      #e8edf5;
+    --muted:     #7a8fa6;
+    --font-mono: 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0d1b35 0%, #0a1628 50%, #0d1b35 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 24px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(45,156,219,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-tag {
+    display: inline-block;
+    background: rgba(45,156,219,0.15);
+    border: 1px solid rgba(45,156,219,0.3);
+    color: var(--accent2);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: clamp(22px, 5vw, 36px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .stat {
+    flex: 1;
+    max-width: 160px;
+    text-align: center;
+    padding: 14px 8px;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+
+  /* ── SEARCH CARD ── */
+  .search-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+  }
+  .search-label {
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 16px;
+    font-family: var(--font-mono);
+    padding: 14px 18px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+  }
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(45,156,219,0.15);
+  }
+  input[type="text"]::placeholder { color: #3a4a5c; }
+  button#search-btn {
+    background: linear-gradient(135deg, var(--accent) 0%, #1a7ab5 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 24px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  button#search-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  button#search-btn:active { transform: translateY(0); }
+
+  .examples {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .examples-label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .example-chip {
+    background: rgba(45,156,219,0.1);
+    border: 1px solid rgba(45,156,219,0.25);
+    border-radius: 20px;
+    color: var(--accent2);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .example-chip:hover { background: rgba(45,156,219,0.2); }
+
+  /* ── RESULTS ── */
+  #results { display: none; }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .gene-badge {
+    background: rgba(45,156,219,0.15);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 6px 14px;
+    letter-spacing: 1px;
+  }
+  .result-title {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* ── MATCH CARD ── */
+  .match-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .match-card:hover { border-color: var(--accent); }
+  .match-card.rank-1 {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #1f1d0d 0%, var(--card) 60%);
+  }
+  .match-card.rank-1::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
+
+  .match-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+  .match-rank {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+  .match-card.rank-1 .match-rank { color: var(--gold); }
+
+  .cancer-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    flex: 1;
+  }
+  .match-card.rank-1 .cancer-name { color: #fff; }
+
+  .score-badge {
+    background: rgba(45,156,219,0.15);
+    border: 1px solid rgba(45,156,219,0.3);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .match-card.rank-1 .score-badge {
+    background: rgba(242,201,76,0.15);
+    border-color: rgba(242,201,76,0.4);
+    color: var(--gold);
+  }
+
+  /* Bar */
+  .bar-track {
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0;
+  }
+  .rank-1 .bar-fill { background: linear-gradient(90deg, #b8860b, var(--gold)); }
+  .rank-2 .bar-fill { background: linear-gradient(90deg, #1a7ab5, var(--accent)); }
+  .rank-3 .bar-fill { background: linear-gradient(90deg, #1d6e4e, #27ae60); }
+  .rank-other .bar-fill { background: var(--border); }
+
+  /* Gene context */
+  .gene-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .context-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .context-gene {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    color: #a0b4c8;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  .context-gene.highlighted {
+    background: rgba(45,156,219,0.15);
+    border-color: rgba(45,156,219,0.4);
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  /* ── NOT FOUND ── */
+  #not-found {
+    display: none;
+    background: var(--card);
+    border: 1px solid #3a1a1a;
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+  }
+  .nf-icon { font-size: 36px; margin-bottom: 12px; }
+  .nf-title { font-size: 18px; font-weight: 600; color: var(--red); margin-bottom: 8px; }
+  .nf-text { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .nf-gene { font-family: var(--font-mono); color: var(--text); }
+
+  /* ── EXPLAINER ── */
+  .explainer {
+    background: rgba(45,156,219,0.06);
+    border: 1px solid rgba(45,156,219,0.15);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-top: 28px;
+  }
+  .explainer-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .explainer p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: #3a4a5c;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 480px) {
+    .input-row { flex-direction: column; }
+    button#search-btn { width: 100%; }
+    .stats-bar { flex-wrap: wrap; }
+    .stat { min-width: 50%; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">University of Groningen · Year 3 Project</div>
+  <h1>TCGA Cancer Gene Explorer</h1>
+  <p class="subtitle">Enter an Ensembl gene ID to discover which cancer types it most strongly predicts — powered by machine learning on 9,185 tumour samples.</p>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">96.2%</div><div class="stat-label">Model accuracy</div></div>
+  <div class="stat"><div class="stat-num">32</div><div class="stat-label">Cancer types</div></div>
+  <div class="stat"><div class="stat-num">60,498</div><div class="stat-label">Genes analysed</div></div>
+  <div class="stat"><div class="stat-num">9,185</div><div class="stat-label">Tumour samples</div></div>
+</div>
+
+<main>
+  <div class="search-card">
+    <label class="search-label" for="gene-input">Enter Ensembl Gene ID</label>
+    <div class="input-row">
+      <input type="text" id="gene-input" placeholder="e.g. ENSG00000276888" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button id="search-btn" onclick="search()">Explore →</button>
+    </div>
+    <div class="examples">
+      <span class="examples-label">Try:</span>
+      <span class="example-chip" onclick="fillAndSearch('ENSG00000276888')">ENSG00000276888</span>
+      <span class="example-chip" onclick="fillAndSearch('ENSG00000276911')">ENSG00000276911</span>
+      <span class="example-chip" onclick="fillAndSearch('ENSG00000240237')">ENSG00000240237</span>
+      <span class="example-chip" onclick="fillAndSearch('ENSG00000107485')">ENSG00000107485</span>
+      <span class="example-chip" onclick="fillAndSearch('ENSG00000274652')">ENSG00000274652</span>
+    </div>
+  </div>
+
+  <div id="results"></div>
+  <div id="not-found"></div>
+
+  <div class="explainer">
+    <div class="explainer-title">How this works</div>
+    <p>Our Logistic Regression model was trained on RNA-seq gene expression data from The Cancer Genome Atlas (TCGA). Each gene was ranked by its ANOVA F-score — measuring how strongly its expression differs between each cancer type and all others. When you enter a gene ID, we show which cancer types that gene most powerfully distinguishes. The higher the F-score, the more diagnostic that gene is for that cancer.</p>
+  </div>
+</main>
+
+<footer>TCGA Pan-Cancer Analysis · University of Groningen · 2026 · Logistic Regression classifier · scikit-learn</footer>
+
+<script>
+// ── All ANOVA data embedded ──────────────────────────────────────
+const DATA = {
+  "ENSG00000160882": [["adrenocortical cancer",5933.92,1],["adrenocortical cancer",5933.92,1]],
+};
+
+// Full dataset — gene → [{cancer, f_score, rank}]
+const GENE_INDEX = {};
+
+const RAW = [
+  ["adrenocortical cancer","ENSG00000160882",5933.92,1],
+  ["adrenocortical cancer","ENSG00000179142",5702.44,2],
+  ["adrenocortical cancer","ENSG00000214266",1894.22,3],
+  ["adrenocortical cancer","ENSG00000137714",1813.45,4],
+  ["adrenocortical cancer","ENSG00000166917",1622.10,5],
+  ["bladder urothelial carcinoma","ENSG00000110375",2732.62,1],
+  ["bladder urothelial carcinoma","ENSG00000250256",2643.20,2],
+  ["bladder urothelial carcinoma","ENSG00000268864",2484.39,3],
+  ["bladder urothelial carcinoma","ENSG00000215834",2220.30,4],
+  ["bladder urothelial carcinoma","ENSG00000158786",2117.67,5],
+  ["brain lower grade glioma","ENSG00000248184",29347.41,1],
+  ["brain lower grade glioma","ENSG00000224924",23293.72,2],
+  ["brain lower grade glioma","ENSG00000258342",22531.30,3],
+  ["brain lower grade glioma","ENSG00000238194",21853.68,4],
+  ["brain lower grade glioma","ENSG00000248518",21839.78,5],
+  ["breast invasive carcinoma","ENSG00000234918",14744.59,1],
+  ["breast invasive carcinoma","ENSG00000240800",14334.15,2],
+  ["breast invasive carcinoma","ENSG00000148513",14200.56,3],
+  ["breast invasive carcinoma","ENSG00000110484",13414.40,4],
+  ["breast invasive carcinoma","ENSG00000244402",13358.69,5],
+  ["cervical & endocervical cancer","ENSG00000206073",1146.67,1],
+  ["cervical & endocervical cancer","ENSG00000206786",1133.66,2],
+  ["cervical & endocervical cancer","ENSG00000261824",1074.51,3],
+  ["cervical & endocervical cancer","ENSG00000077935",1059.49,4],
+  ["cervical & endocervical cancer","ENSG00000057149",1050.93,5],
+  ["cholangiocarcinoma","ENSG00000223603",665.52,1],
+  ["cholangiocarcinoma","ENSG00000158731",636.63,2],
+  ["cholangiocarcinoma","ENSG00000202276",632.64,3],
+  ["cholangiocarcinoma","ENSG00000259534",394.06,4],
+  ["cholangiocarcinoma","ENSG00000132703",392.19,5],
+  ["colon adenocarcinoma","ENSG00000256643",4898.12,1],
+  ["colon adenocarcinoma","ENSG00000095110",3757.05,2],
+  ["colon adenocarcinoma","ENSG00000016490",3591.05,3],
+  ["colon adenocarcinoma","ENSG00000183463",3448.31,4],
+  ["colon adenocarcinoma","ENSG00000007952",3202.34,5],
+  ["diffuse large B-cell lymphoma","ENSG00000224648",3197.10,1],
+  ["diffuse large B-cell lymphoma","ENSG00000231681",2772.61,2],
+  ["diffuse large B-cell lymphoma","ENSG00000235620",2719.51,3],
+  ["diffuse large B-cell lymphoma","ENSG00000164500",2324.93,4],
+  ["diffuse large B-cell lymphoma","ENSG00000200645",1906.84,5],
+  ["esophageal carcinoma","ENSG00000228289",2206.90,1],
+  ["esophageal carcinoma","ENSG00000256657",1744.13,2],
+  ["esophageal carcinoma","ENSG00000256338",1683.18,3],
+  ["esophageal carcinoma","ENSG00000234167",1674.39,4],
+  ["esophageal carcinoma","ENSG00000259735",1660.91,5],
+  ["glioblastoma multiforme","ENSG00000216829",2631.52,1],
+  ["glioblastoma multiforme","ENSG00000260850",2623.98,2],
+  ["glioblastoma multiforme","ENSG00000250377",2472.27,3],
+  ["glioblastoma multiforme","ENSG00000221745",2272.39,4],
+  ["glioblastoma multiforme","ENSG00000228592",2246.02,5],
+  ["head & neck squamous cell carcinoma","ENSG00000185966",5484.45,1],
+  ["head & neck squamous cell carcinoma","ENSG00000163202",5475.77,2],
+  ["head & neck squamous cell carcinoma","ENSG00000185962",4567.60,3],
+  ["head & neck squamous cell carcinoma","ENSG00000196805",4556.98,4],
+  ["head & neck squamous cell carcinoma","ENSG00000184148",4495.64,5],
+  ["kidney chromophobe","ENSG00000254517",5882.97,1],
+  ["kidney chromophobe","ENSG00000215117",2947.59,2],
+  ["kidney chromophobe","ENSG00000225064",2849.72,3],
+  ["kidney chromophobe","ENSG00000265460",2709.46,4],
+  ["kidney chromophobe","ENSG00000256362",2594.17,5],
+  ["kidney clear cell carcinoma","ENSG00000235139",12853.15,1],
+  ["kidney clear cell carcinoma","ENSG00000232271",12294.37,2],
+  ["kidney clear cell carcinoma","ENSG00000272027",9731.64,3],
+  ["kidney clear cell carcinoma","ENSG00000224490",8992.13,4],
+  ["kidney clear cell carcinoma","ENSG00000233456",8822.40,5],
+  ["kidney papillary cell carcinoma","ENSG00000226193",3309.15,1],
+  ["kidney papillary cell carcinoma","ENSG00000081800",3297.17,2],
+  ["kidney papillary cell carcinoma","ENSG00000188029",2878.50,3],
+  ["kidney papillary cell carcinoma","ENSG00000251292",2651.71,4],
+  ["kidney papillary cell carcinoma","ENSG00000226337",2643.12,5],
+  ["liver hepatocellular carcinoma","ENSG00000276911",37393.75,1],
+  ["liver hepatocellular carcinoma","ENSG00000101981",30493.96,2],
+  ["liver hepatocellular carcinoma","ENSG00000080910",26429.98,3],
+  ["liver hepatocellular carcinoma","ENSG00000261012",23880.53,4],
+  ["liver hepatocellular carcinoma","ENSG00000229740",18675.93,5],
+  ["lung adenocarcinoma","ENSG00000131400",6116.86,1],
+  ["lung adenocarcinoma","ENSG00000273877",4926.98,2],
+  ["lung adenocarcinoma","ENSG00000256615",4572.42,3],
+  ["lung adenocarcinoma","ENSG00000122852",4451.41,4],
+  ["lung adenocarcinoma","ENSG00000168878",3941.43,5],
+  ["lung squamous cell carcinoma","ENSG00000223679",4192.46,1],
+  ["lung squamous cell carcinoma","ENSG00000213495",2844.86,2],
+  ["lung squamous cell carcinoma","ENSG00000234862",2669.58,3],
+  ["lung squamous cell carcinoma","ENSG00000271134",2569.63,4],
+  ["lung squamous cell carcinoma","ENSG00000122852",2259.73,5],
+  ["mesothelioma","ENSG00000224919",4705.54,1],
+  ["mesothelioma","ENSG00000226722",1811.38,2],
+  ["mesothelioma","ENSG00000258115",1789.09,3],
+  ["mesothelioma","ENSG00000234034",1458.95,4],
+  ["mesothelioma","ENSG00000223488",1017.81,5],
+  ["ovarian serous cystadenocarcinoma","ENSG00000226956",9123.84,1],
+  ["ovarian serous cystadenocarcinoma","ENSG00000168515",8305.87,2],
+  ["ovarian serous cystadenocarcinoma","ENSG00000237326",8186.15,3],
+  ["ovarian serous cystadenocarcinoma","ENSG00000231295",7543.82,4],
+  ["ovarian serous cystadenocarcinoma","ENSG00000236253",6956.33,5],
+  ["pancreatic adenocarcinoma","ENSG00000228890",9842.50,1],
+  ["pancreatic adenocarcinoma","ENSG00000237563",9842.50,2],
+  ["pancreatic adenocarcinoma","ENSG00000254647",8034.40,3],
+  ["pancreatic adenocarcinoma","ENSG00000175535",5127.97,4],
+  ["pancreatic adenocarcinoma","ENSG00000179751",4106.80,5],
+  ["pheochromocytoma & paraganglioma","ENSG00000250467",26888.20,1],
+  ["pheochromocytoma & paraganglioma","ENSG00000207569",12496.24,2],
+  ["pheochromocytoma & paraganglioma","ENSG00000249122",10704.16,3],
+  ["pheochromocytoma & paraganglioma","ENSG00000109132",9340.71,4],
+  ["pheochromocytoma & paraganglioma","ENSG00000243062",8898.27,5],
+  ["prostate adenocarcinoma","ENSG00000276888",37523.19,1],
+  ["prostate adenocarcinoma","ENSG00000236666",31188.63,2],
+  ["prostate adenocarcinoma","ENSG00000267465",24561.59,3],
+  ["prostate adenocarcinoma","ENSG00000275563",22546.64,4],
+  ["prostate adenocarcinoma","ENSG00000229370",21063.09,5],
+  ["rectum adenocarcinoma","ENSG00000256643",1623.55,1],
+  ["rectum adenocarcinoma","ENSG00000225421",955.61,2],
+  ["rectum adenocarcinoma","ENSG00000095110",948.17,3],
+  ["rectum adenocarcinoma","ENSG00000007952",888.30,4],
+  ["rectum adenocarcinoma","ENSG00000224099",851.92,5],
+  ["sarcoma","ENSG00000076826",4994.32,1],
+  ["sarcoma","ENSG00000067606",2396.17,2],
+  ["sarcoma","ENSG00000275234",2351.15,3],
+  ["sarcoma","ENSG00000065361",2248.72,4],
+  ["sarcoma","ENSG00000130545",2172.55,5],
+  ["skin cutaneous melanoma","ENSG00000223362",4098.99,1],
+  ["skin cutaneous melanoma","ENSG00000124900",4098.95,2],
+  ["skin cutaneous melanoma","ENSG00000185664",3807.23,3],
+  ["skin cutaneous melanoma","ENSG00000077498",3747.85,4],
+  ["skin cutaneous melanoma","ENSG00000254813",3446.61,5],
+  ["stomach adenocarcinoma","ENSG00000169876",3866.01,1],
+  ["stomach adenocarcinoma","ENSG00000279502",3835.71,2],
+  ["stomach adenocarcinoma","ENSG00000259735",3729.89,3],
+  ["stomach adenocarcinoma","ENSG00000233376",3404.51,4],
+  ["stomach adenocarcinoma","ENSG00000228830",3341.78,5],
+  ["testicular germ cell tumor","ENSG00000274652",22656.43,1],
+  ["testicular germ cell tumor","ENSG00000176979",11804.81,2],
+  ["testicular germ cell tumor","ENSG00000204547",9288.60,3],
+  ["testicular germ cell tumor","ENSG00000187569",8496.68,4],
+  ["testicular germ cell tumor","ENSG00000227059",7855.01,5],
+  ["thymoma","ENSG00000236656",18146.71,1],
+  ["thymoma","ENSG00000198965",18016.17,2],
+  ["thymoma","ENSG00000198703",12092.01,3],
+  ["thymoma","ENSG00000278410",11916.80,4],
+  ["thymoma","ENSG00000235492",8301.85,5],
+  ["thyroid carcinoma","ENSG00000240237",27786.52,1],
+  ["thyroid carcinoma","ENSG00000042832",23998.54,2],
+  ["thyroid carcinoma","ENSG00000186146",17584.89,3],
+  ["thyroid carcinoma","ENSG00000249295",12932.36,4],
+  ["thyroid carcinoma","ENSG00000204368",10535.15,5],
+  ["uterine carcinosarcoma","ENSG00000232064",210106.43,1],
+  ["uterine carcinosarcoma","ENSG00000252508",989.93,2],
+  ["uterine carcinosarcoma","ENSG00000242671",591.64,3],
+  ["uterine carcinosarcoma","ENSG00000143353",545.47,4],
+  ["uterine carcinosarcoma","ENSG00000228082",510.35,5],
+  ["uterine corpus endometrioid carcinoma","ENSG00000260676",2664.41,1],
+  ["uterine corpus endometrioid carcinoma","ENSG00000164736",1429.19,2],
+  ["uterine corpus endometrioid carcinoma","ENSG00000197745",1403.98,3],
+  ["uterine corpus endometrioid carcinoma","ENSG00000163132",1304.30,4],
+  ["uterine corpus endometrioid carcinoma","ENSG00000168818",1303.13,5],
+  ["uveal melanoma","ENSG00000249727",3759.67,1],
+  ["uveal melanoma","ENSG00000185664",3311.99,2],
+  ["uveal melanoma","ENSG00000077498",2418.57,3],
+  ["uveal melanoma","ENSG00000120215",2398.68,4],
+  ["uveal melanoma","ENSG00000118434",2216.76,5],
+];
+
+// Build gene index: gene -> array of {cancer, f_score, rank, allGenes}
+// Also build cancer -> all 5 genes map
+const CANCER_GENES = {};
+RAW.forEach(([cancer, gene, f_score, rank]) => {
+  if (!CANCER_GENES[cancer]) CANCER_GENES[cancer] = [];
+  CANCER_GENES[cancer].push({ gene, f_score, rank });
+});
+
+RAW.forEach(([cancer, gene, f_score, rank]) => {
+  const geneBase = gene.split('.')[0];
+  if (!GENE_INDEX[geneBase]) GENE_INDEX[geneBase] = [];
+  GENE_INDEX[geneBase].push({
+    cancer,
+    f_score,
+    rank,
+    allGenes: CANCER_GENES[cancer]
+  });
+});
+
+// Also index by full ID
+RAW.forEach(([cancer, gene, f_score, rank]) => {
+  if (!GENE_INDEX[gene]) GENE_INDEX[gene] = [];
+  // avoid duplicates if already added
+  const already = GENE_INDEX[gene].some(x => x.cancer === cancer);
+  if (!already) {
+    GENE_INDEX[gene].push({
+      cancer, f_score, rank,
+      allGenes: CANCER_GENES[cancer]
+    });
+  }
+});
+
+function capitalise(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function rankClass(i) {
+  if (i === 0) return 'rank-1';
+  if (i === 1) return 'rank-2';
+  if (i === 2) return 'rank-3';
+  return 'rank-other';
+}
+
+function rankLabel(i) {
+  if (i === 0) return '🥇 Top match';
+  if (i === 1) return '🥈 2nd match';
+  if (i === 2) return '🥉 3rd match';
+  return `Match #${i + 1}`;
+}
+
+function fillAndSearch(geneId) {
+  document.getElementById('gene-input').value = geneId;
+  search();
+}
+
+function search() {
+  const raw = document.getElementById('gene-input').value.trim();
+  const query = raw.toUpperCase().split('.')[0];
+
+  const resultsEl  = document.getElementById('results');
+  const notFoundEl = document.getElementById('not-found');
+
+  resultsEl.style.display  = 'none';
+  notFoundEl.style.display = 'none';
+
+  if (!query) return;
+
+  const matches = GENE_INDEX[query];
+
+  if (!matches || matches.length === 0) {
+    notFoundEl.style.display = 'block';
+    notFoundEl.innerHTML = `
+      <div class="nf-icon">🔬</div>
+      <div class="nf-title">Gene not found in top markers</div>
+      <div class="nf-text">
+        <span class="nf-gene">${raw}</span> was not identified as a top-5 discriminative marker
+        for any of the 32 cancer types in our ANOVA analysis.<br><br>
+        This doesn't mean the gene is unimportant — it means it wasn't among the
+        strongest differentiators in a one-vs-rest analysis across 60,498 genes.
+        Try one of the example gene IDs above.
+      </div>`;
+    return;
+  }
+
+  // Sort by F-score descending
+  const sorted = [...matches].sort((a, b) => b.f_score - a.f_score);
+
+  // Get max F-score for bar scaling
+  const maxF = sorted[0].f_score;
+
+  // Get all unique genes mentioned across matched cancers (for context)
+  const allMatchedGenes = new Set(matches.map(m => m.gene || query));
+
+  let html = `
+    <div class="result-header">
+      <div class="gene-badge">${query}</div>
+      <div class="result-title">Found in <strong style="color:var(--text)">${sorted.length}</strong> cancer type${sorted.length > 1 ? 's' : ''} as a top marker</div>
+    </div>`;
+
+  sorted.forEach((match, i) => {
+    const pct = Math.round((match.f_score / maxF) * 100);
+    const rc  = rankClass(i);
+    const rl  = rankLabel(i);
+
+    // Show the 5 genes for this cancer, highlight the searched one
+    const geneChips = match.allGenes.map(g => {
+      const isThis = g.gene.split('.')[0] === query || g.gene === query;
+      return `<span class="context-gene ${isThis ? 'highlighted' : ''}">${g.gene.split('.')[0]}</span>`;
+    }).join('');
+
+    html += `
+      <div class="match-card ${rc}">
+        <div class="match-top">
+          <div>
+            <div class="match-rank">${rl}</div>
+            <div class="cancer-name">${capitalise(match.cancer)}</div>
+          </div>
+          <div class="score-badge">F = ${match.f_score.toLocaleString()}</div>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:0%" data-target="${pct}%"></div>
+        </div>
+        <div class="gene-context">
+          <span class="context-label">Top markers for this cancer:</span>
+          ${geneChips}
+        </div>
+      </div>`;
+  });
+
+  resultsEl.innerHTML = html;
+  resultsEl.style.display = 'block';
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.bar-fill').forEach(bar => {
+      bar.style.width = bar.dataset.target;
+    });
+  });
+}
+
+// Enter key support
+document.getElementById('gene-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') search();
+});
+</script>
+</body>
+</html>
