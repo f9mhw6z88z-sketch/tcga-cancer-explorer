@@ -6,7 +6,7 @@ A machine learning pipeline for classifying 32 cancer types from RNA-seq gene ex
 
 ---
 
-## 🎯 Results
+## Results
 
 | Model | Test Accuracy | CV Accuracy (5-fold) |
 |---|---|---|
@@ -28,7 +28,7 @@ Try the gene explorer here — enter any Ensembl gene ID to see which cancer typ
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 tcga-cancer-explorer/
@@ -43,7 +43,7 @@ tcga-cancer-explorer/
 
 ---
 
-## 🚀 Running the Analysis
+## Running the Analysis
 
 ### Requirements
 ```bash
@@ -62,7 +62,7 @@ sbatch run_tcga.sh
 
 ---
 
-## 🔬 Methodology
+## Methodology
 
 ### Data
 - Source: [TCGA via UCSC Xena Browser](https://xenabrowser.net/)
@@ -84,7 +84,7 @@ All models implemented with `scikit-learn` (v1.8.0) inside `Pipeline` objects:
 
 ---
 
-## 💻 Computational Resources
+## Computational Resources
 
 Trained on the **Hábrók HPC Cluster**, University of Groningen:
 - Node: omni4 | 8 CPU cores | 64 GB RAM allocated
@@ -93,7 +93,7 @@ Trained on the **Hábrók HPC Cluster**, University of Groningen:
 
 ---
 
-## 📊 Key Findings
+## Key Findings
 
 - Logistic Regression outperformed more complex models, consistent with literature showing linear classifiers are effective on high-dimensional transcriptomic data
 - 7 cancer types achieved perfect F1 = 1.00 (thyroid, prostate, ovarian, testicular, thymoma, glioblastoma, pheochromocytoma)
@@ -102,7 +102,7 @@ Trained on the **Hábrók HPC Cluster**, University of Groningen:
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 ```
 pandas>=1.3.0
@@ -122,7 +122,7 @@ Nikta Yazdani, Erika Sonko, & Ollie Wingfield
 
 ---
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 Computational resources provided by the **Hábrók High Performance Computing cluster**, University of Groningen.
 Data from **The Cancer Genome Atlas (TCGA)** accessed via the **UCSC Xena Browser**.
